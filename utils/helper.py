@@ -8,11 +8,13 @@ import scipy.sparse as sparse
 from scipy.interpolate import CubicSpline
 
 """
-Import Inhouse Rescomp
+Import Inhouse Rescomp (sibling of Thinned_Rescomp: ~/rescomp/rescomp)
 """
 import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "..", "rescomp", "rescomp")))
+from pathlib import Path
+
+_rescomp_dir = Path(__file__).resolve().parents[2] / "rescomp" / "rescomp"
+sys.path.insert(0, str(_rescomp_dir))
 import ResComp
 import chaosode
 

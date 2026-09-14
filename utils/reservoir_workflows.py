@@ -109,7 +109,9 @@ def _evaluate_reservoir_on_network(
     U_pred, states_pred = res_thinned.predict(t_test, r0=res_thinned.r0, return_states=True)
     error = np.linalg.norm(U_test - U_pred, axis=1)
     vpt = vpt_time(t_test, U_test, U_pred, vpt_tol=tol)
-    divs = div_metric_tests(res_thinned.states)
+    # D_task needs R and Y on the same time grid. Train's self.states can
+    # pick up batch-overlap rows, so use the first replica drive (same T as U_train).
+    divs = div_metric_tests(res_thinned.states, targets=U_train, task_states=states_1)
 
     datasets: Dict[str, list] = {}
 
@@ -134,10 +136,7 @@ def _evaluate_reservoir_on_network(
     print("Divs:", divs)
     update_datasets(
         datasets,
-        div_pos=divs[0],
-        div_der=divs[1],
-        div_spect=divs[2],
-        div_rank=divs[3],
+        **divs,
         pred=U_pred,
         err=error,
         vpt=vpt,

@@ -48,23 +48,31 @@ def create_system_plot(values, ax, title, p_thins, rhos, label_step=4):
         norm=norm
     )
 
-    ax.set(
-        title=title,
-        xlabel="p_thin",
-        ylabel="rho",
-        xticks=x,
-        yticks=y,
-        xticklabels=[f"{p:.2f}".rstrip('0').rstrip('.') for p in p_thins],
-        yticklabels=[f"{r:.2f}".rstrip('0').rstrip('.') for r in rhos],
+    ax.set_title(title, fontsize=16, pad=8)
+    ax.set_xlabel("p_thin", fontsize=13)
+    ax.set_ylabel("rho", fontsize=13)
+    ax.set_xticks(x)
+    ax.set_yticks(y)
+    ax.set_xticklabels(
+        [f"{p:.2f}".rstrip('0').rstrip('.') for p in p_thins],
+        fontsize=11,
+        rotation=45,
+        ha="right",
     )
+    ax.set_yticklabels(
+        [f"{r:.2f}".rstrip('0').rstrip('.') for r in rhos],
+        fontsize=11,
+    )
+    ax.tick_params(axis="both", length=4, width=1)
 
+    n_show = max(1, len(p_thins) // 10) if len(p_thins) > 12 else 1
     for i, lbl in enumerate(ax.get_xticklabels()):
-        lbl.set_visible(i % label_step == 0)
+        lbl.set_visible(i % n_show == 0)
 
-    # ---- external colorbar ----
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.1)
-    plt.colorbar(mesh, cax=cax)
+    cax = divider.append_axes("right", size="5%", pad=0.12)
+    cbar = plt.colorbar(mesh, cax=cax)
+    cbar.ax.tick_params(labelsize=10)
 
 
 def create_correlation_plots(metrics, save_path, rhos, p_thins, method="pearson"):
@@ -316,17 +324,29 @@ def create_metric_mean_plots(
         rho_p_thin_set="",
     ):
 
-    num_plots = len(metrics.keys())
-    num_rows = int(np.sqrt(num_plots))
-    num_cols = int(num_plots / num_rows) + 1
-    fig, axs = plt.subplots(num_rows, num_cols, figsize=(num_cols*12,num_rows*10))
+    num_plots = len(metrics)
+    num_cols = 3 if num_plots > 4 else 2
+    num_rows = int(np.ceil(num_plots / num_cols))
+    fig, axs = plt.subplots(
+        num_rows,
+        num_cols,
+        figsize=(num_cols * 6.5, num_rows * 5.2),
+        squeeze=False,
+    )
 
+    axes = axs.flatten()
     for i, attr in enumerate(metrics):
-        create_system_plot(metrics[attr], axs.flatten()[i], attr, p_thins, rhos)
+        create_system_plot(metrics[attr], axes[i], attr, p_thins, rhos)
+    for ax in axes[num_plots:]:
+        ax.set_visible(False)
 
-    plt.suptitle(f'{param_name}: {param}, {param_set}, {rho_p_thin_set}')
-    plt.tight_layout()
-    plt.savefig(f"{save_path}mean_plots.png")
+    plt.suptitle(
+        f'{param_name}: {param}, {param_set}, {rho_p_thin_set}',
+        fontsize=18,
+        y=1.01,
+    )
+    fig.tight_layout()
+    plt.savefig(f"{save_path}mean_plots.png", dpi=150, bbox_inches="tight")
 
 
 def create_plots_helper(
@@ -340,13 +360,33 @@ def create_plots_helper(
         p_thins,
         c
     ):
-    plot_path = Path(__file__).resolve().parents[1] / "paper_plots" / "plots" / network_type / param_name / param / param_set / rho_p_thin_set
+    plot_path = (
+        Path(__file__).resolve().parents[1]
+        / "paper_plots"
+        / "plots"
+        / network_type
+        / param_name
+        / str(param)
+        / param_set
+        / rho_p_thin_set
+    )
     plot_path.mkdir(parents=True, exist_ok=True)
+    plot_dir = f"{plot_path}/"
 
     print(f"Metric keys: {list(comp_metrics.keys())}")
 
     diameter_keys = ['mean_average_diam', 'mean_giant_diam'] #['mean_average_diam', 'mean_giant_diam', 'giant_size']
-    focus_keys = ['mean_vpt', 'mean_div_pos', 'mean_div_der', 'mean_div_spect', 'mean_div_rank', 'mean_consistency_correlation']
+    focus_keys = [
+        'mean_vpt',
+        'mean_div_pos',
+        'mean_div_der',
+        'mean_div_spect',
+        'mean_div_rank',
+        'mean_div_var_node',
+        'mean_div_var_state',
+        'mean_div_task',
+        'mean_consistency_correlation',
+    ]
     
     diameter_metrics = {k: comp_metrics[k] for k in diameter_keys}
     focus_metrics = {k: comp_metrics[k] for k in focus_keys}
@@ -355,11 +395,11 @@ def create_plots_helper(
     print(f"diameter argmax", diam_p_thin_argmax)
     p_thin_cs = [p_thins[diam_p_thin_argmax]]
 
-    create_metric_mean_plots(focus_metrics, param_name, param, param_set, p_thins, rhos, plot_path, rho_p_thin_set)
-    create_correlation_plots(focus_metrics, f"{plot_path}/", rhos, p_thins)
-    create_correlation_line_plots(focus_metrics, f"{plot_path}/", rhos, p_thins, p_thin_cs, c)
-    create_diameter_p_thin_plots(diameter_metrics, c, f"{plot_path}/", p_thins)
-    create_column_linear_plots(focus_metrics, f"{plot_path}/", rhos, p_thins, focus_keys)
+    create_metric_mean_plots(focus_metrics, param_name, param, param_set, p_thins, rhos, plot_dir, rho_p_thin_set)
+    create_correlation_plots(focus_metrics, plot_dir, rhos, p_thins)
+    create_correlation_line_plots(focus_metrics, plot_dir, rhos, p_thins, p_thin_cs, c)
+    create_diameter_p_thin_plots(diameter_metrics, c, plot_dir, p_thins)
+    create_column_linear_plots(focus_metrics, plot_dir, rhos, p_thins, focus_keys)
 
 
 if __name__ == "__main__":
@@ -368,8 +408,8 @@ if __name__ == "__main__":
     """
     network_type, rho_p_thin_set, param, param_name, param_set = parse_arguments()
 
-    paper_root = Path(__file__).resolve().parents[1] / "paper_plots"
-    results_path = paper_root / "data" / network_type / param_name / param / param_set / rho_p_thin_set
+    home = Path.home()
+    results_path = home / "nobackup" / "autodelete" / "results" / network_type / param_name / str(param) / param_set / rho_p_thin_set
 
     rhos_p_thin_dict = {}
     with open(f'./utils/rho_p_thin_sets/{rho_p_thin_set}.json') as f:

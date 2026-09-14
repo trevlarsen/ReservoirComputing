@@ -148,6 +148,7 @@ dependencies:
   - rdma-core=57.0=h5888daf_0
   - readline=8.2=h8c095d6_2
   - scipy=1.15.2=py313h86fcf2b_0
+  - seaborn
   - six=1.17.0=pyhd8ed1ab_0
   - statsmodels=0.14.4=py313ha014f3b_0
   - tk=8.6.13=noxft_hd72426e_102

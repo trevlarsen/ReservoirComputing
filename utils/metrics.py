@@ -220,25 +220,96 @@ def div_norm(states):
     return div_rank
 
 
-def div_metric_tests(states):
+def div_var_node(states):
     """
-    Compute diversity scores of internal reservoir states and their time derivatives,
-    matching the element-wise absolute difference method from div_metric_tests.
+    Cross-Node Variation (D_CN).
+
+        D_CN = (1/N) sum_{i=1}^{N} Var_t [r_i(t)]
+
+    Temporal variance of each node's signed response, then averaged over nodes.
+    Var is the population variance (1/T, numpy ddof=0).
+
+    Parameters:
+        states (ndarray): Reservoir states, shape (T, N)
+    """
+    return float(np.mean(np.var(states, axis=0, ddof=0)))
+
+
+def div_var_state(states):
+    """
+    Cross-State Variation (D_CS).
+
+        D_CS = (1/T) sum_t Var_i [|r_i(t)|]
+
+    Snapshot variance of node response magnitudes |r_i(t)|, then averaged over
+    time. Var is the population variance (1/N, numpy ddof=0).
+
+    Parameters:
+        states (ndarray): Reservoir states, shape (T, N)
+    """
+    return float(np.mean(np.var(np.abs(states), axis=1, ddof=0)))
+
+
+def div_task(states, targets):
+    """
+    Task rank diversity (D_task).
+
+        D_task = ||P_Y R||_F^2 / ||R||_F^2
+        P_Y = Y Y^+
+
+    R is the reservoir response (T, n) and Y is the target signal (T, m).
+    Y^+ is the Moore-Penrose pseudoinverse. The T x T projector is never
+    formed: P_Y R = Y (Y^+ R).
+
+    Parameters:
+        states (ndarray): Reservoir states R, shape (T, n)
+        targets (ndarray): Target signal Y, shape (T, m)
+    """
+    R = np.asarray(states, dtype=float)
+    Y = np.asarray(targets, dtype=float)
+    if R.ndim != 2 or Y.ndim != 2:
+        raise ValueError("states and targets must be 2-D arrays")
+    if R.shape[0] != Y.shape[0]:
+        T = min(R.shape[0], Y.shape[0])
+        R = R[:T]
+        Y = Y[:T]
+
+    denom = np.linalg.norm(R, "fro") ** 2
+    if denom == 0.0:
+        return 0.0
+
+    projected = Y @ (np.linalg.pinv(Y) @ R)
+    return float(np.linalg.norm(projected, "fro") ** 2 / denom)
+
+
+def div_metric_tests(states, targets=None, task_states=None):
+    """
+    Compute diversity scores of internal reservoir states.
 
     Parameters:
         states (ndarray): Reservoir states, shape (T, n)
+        targets (ndarray, optional): Target signal Y, shape (T, m). If given,
+            include D_task.
+        task_states (ndarray, optional): Response matrix R to use for D_task
+            when it must share a time axis with Y. Defaults to states.
 
     Returns:
-        (float, float, float, float): diversity scores
+        dict of float diversity scores
     """
-
-    # Sum over time, average over number of pairs
-    div_pos = div_spatial(states)
-    div_der = div_rate(states)
-    div_spect = div_spectral(states)
-    div_rank = div_norm(states)
-
-    return div_pos, div_der, div_spect, div_rank
+    scores = {
+        "div_pos": div_spatial(states),
+        "div_der": div_rate(states),
+        "div_spect": div_spectral(states),
+        "div_rank": div_norm(states),
+        "div_var_node": div_var_node(states),
+        "div_var_state": div_var_state(states),
+    }
+    if targets is not None:
+        scores["div_task"] = div_task(
+            states if task_states is None else task_states,
+            targets,
+        )
+    return scores
 
 
 def consistency_analysis_sphering(x, y, max_cutoff=8000, alpha=1e-9):

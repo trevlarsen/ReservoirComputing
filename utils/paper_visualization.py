@@ -103,13 +103,16 @@ def create_metric_mean_plots(
         "mean_div_der": r"$D_r(\bm{r})$",
         "mean_div_spect": r"$D_\sigma(\bm{r})$",
         "mean_div_rank": r"$D_c(\bm{r})$",
+        "mean_div_var_node": r"$D_{\mathrm{CN}}$",
+        "mean_div_var_state": r"$D_{\mathrm{CS}}$",
+        "mean_div_task": r"$D_{\mathrm{task}}$",
         "mean_consistency_correlation": r"$\Gamma(\bm{r})$"
     }
 
     for attr, values in metrics.items():
         create_system_plot(
             values,
-            title=attrs_to_name[attr],
+            title=attrs_to_name.get(attr, attr),
             p_thins=p_thins,
             rhos=rhos,
             save_path=output_dir / f"{attr}.png",
@@ -137,6 +140,9 @@ def create_correlation_line_plots(
         "mean_div_der": r"$D_r(\bm{r})$",
         "mean_div_spect": r"$D_\sigma(\bm{r})$",
         "mean_div_rank": r"$D_c(\bm{r})$",
+        "mean_div_var_node": r"$D_{\mathrm{CN}}$",
+        "mean_div_var_state": r"$D_{\mathrm{CS}}$",
+        "mean_div_task": r"$D_{\mathrm{task}}$",
         "mean_consistency_correlation": r"$\Gamma(\bm{r})$",
     }
 

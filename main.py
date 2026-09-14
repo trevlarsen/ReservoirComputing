@@ -34,14 +34,20 @@ def main():
     home = os.path.expanduser("~")
     results_path = f'{home}/nobackup/autodelete/results/{network_type}/{param_name}/{param}/{param_set}/{rho_p_thin_set}/'
 
+    # Production default: run draws for up to 2 hours per (rho, p_thin).
+    # Test submits can override with --export=TF_SECONDS=300
+    tf = float(os.getenv("TF_SECONDS", "7200"))
+    draw_count = int(os.getenv("DRAW_COUNT", "100000"))
+    print(f"tf={tf} draw_count={draw_count} results_path={results_path}")
+
     driver.rescomp_parallel_uniform_gridsearch_h5(
         network_type,
         erdos_possible_combinations, 
         rho,
         p_thin,
-        draw_count=100000, 
+        draw_count=draw_count, 
         hdf5_file_path=results_path, 
-        tf=7200
+        tf=tf
     )
 
 

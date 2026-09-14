@@ -201,8 +201,20 @@ Example Usage:
 Reading from the files
 """
 
-metric_attrs = ['mean_average_diam', 'mean_consistency_correlation', 'mean_div_der', 'mean_div_pos', 
-                'mean_div_rank', 'mean_div_spect', 'mean_giant_diam', 'mean_vpt', 'mean_giant_size']
+metric_attrs = [
+    'mean_average_diam',
+    'mean_consistency_correlation',
+    'mean_div_der',
+    'mean_div_pos',
+    'mean_div_rank',
+    'mean_div_spect',
+    'mean_div_var_node',
+    'mean_div_var_state',
+    'mean_div_task',
+    'mean_giant_diam',
+    'mean_vpt',
+    'mean_giant_size',
+]
 
 def get_file_metrics(hdf5_file):
     """
@@ -224,6 +236,10 @@ def get_file_metrics(hdf5_file):
                 else:
                     metrics[attr].append(group.attrs[attr])
 
+        if "mean_vpt" not in metrics:
+            print(f"Number of draws successfully made for {hdf5_file}: 0 (empty or failed file)")
+            return {attr: [] for attr in metric_attrs}
+
         print(f"Number of draws successfully made for {hdf5_file}: {len(metrics['mean_vpt'])}")
         print(f"Mean position diversity: {np.mean(metrics['mean_div_pos'])}")
 
@@ -237,8 +253,8 @@ def get_average_file_metrics(hdf5_file):
     metrics = get_file_metrics(hdf5_file)
     mean_metrics = {}
 
-    for attr in metrics.keys():
-        mean_metrics[attr] = np.mean(metrics[attr])
+    for attr in metric_attrs:
+        mean_metrics[attr] = np.mean(metrics[attr]) if metrics.get(attr) else np.nan
 
     return mean_metrics
     
