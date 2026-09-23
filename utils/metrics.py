@@ -100,9 +100,9 @@ def nrmse(true, pred):
     Returns:
         err (ndarray): Error at each time value. 1D array with m entries
     """
-    # sig = np.std(true, axis=0)
-    # err = np.linalg.norm((true-pred) / sig, axis=1, ord=2)
-    err = np.linalg.norm((true-pred), axis=1, ord=2) # Just regular 2-norm
+    sig = np.std(true, axis=0)
+    err = np.linalg.norm((true-pred) / sig, axis=1, ord=2)
+    # err = np.linalg.norm((true-pred), axis=1, ord=2) # Just regular 2-norm
     return err
 
 
